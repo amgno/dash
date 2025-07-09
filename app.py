@@ -7,6 +7,26 @@ import subprocess
 import os
 from datetime import datetime, timedelta
 
+# Configurazione per Docker: accesso alle metriche del sistema host
+def configure_psutil_for_host():
+    """Configura psutil per leggere le metriche del sistema host quando in Docker"""
+    host_proc = os.environ.get('HOST_PROC', '/proc')
+    
+    # Rileva se siamo in un container Docker
+    in_docker = os.path.exists('/.dockerenv') or os.environ.get('HOST_PROC') is not None
+    
+    if in_docker and host_proc != '/proc' and os.path.exists(host_proc):
+        # Configura psutil per usare i path del sistema host
+        psutil.PROCFS_PATH = host_proc
+        print(f"🐳 Docker mode: usando {host_proc} per metriche del sistema host")
+        return True
+    else:
+        print("🖥️  Bare metal mode: usando /proc nativo")
+        return False
+
+# Inizializza configurazione psutil
+IS_DOCKER = configure_psutil_for_host()
+
 app = Flask(__name__)
 
 def get_system_stats():
@@ -21,8 +41,14 @@ def get_system_stats():
     memory_percent = memory.percent
     memory_used_gb = (memory_percent / 100) * memory_total_gb
     
-    # Disk Usage
-    disk = shutil.disk_usage('/')
+    # Disk Usage (gestisce Docker host mount)
+    if IS_DOCKER and os.path.exists('/host'):
+        # In Docker, usa il mount del sistema host
+        disk = shutil.disk_usage('/host')
+    else:
+        # Bare metal o Docker senza host mount
+        disk = shutil.disk_usage('/')
+    
     disk_used_gb = (disk.total - disk.free) / (1024**3)
     disk_total_gb = disk.total / (1024**3)
     disk_percent = (disk_used_gb / disk_total_gb) * 100

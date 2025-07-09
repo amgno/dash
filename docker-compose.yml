@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  vps-monitor:
+    build: .
+    container_name: vps-monitor
+    ports:
+      - "8080:8080"
+    
+    # Mount per accedere alle metriche del sistema HOST
+    volumes:
+      # File system del sistema host per statistiche reali
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro
+      
+      # Mount aggiuntivi per informazioni complete del sistema
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /dev:/host/dev:ro
+      
+    # Variabili d'ambiente per psutil host monitoring
+    environment:
+      - HOST_PROC=/host/proc
+      - HOST_SYS=/host/sys
+      - HOST_ETC=/host/etc
+      - HOST_DEV=/host/dev
+      
+    # Accesso privilegiato per leggere tutte le metriche del sistema
+    privileged: true
+    
+    # PID del sistema host per vedere tutti i processi
+    pid: host
+    
+    # Network del sistema host
+    network_mode: host
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Healthcheck
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s 
