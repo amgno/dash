@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPS Monitor - Statistiche Sistema</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="grid">
+            <!-- Top Left: CPU Usage -->
+            <div class="panel">
+                <div class="panel-title">CPU USAGE</div>
+                <div class="loading-spinner">
+                    <div class="cpu-radial" id="cpu-radial">
+                        <div class="cpu-percentage" id="cpu-percent">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Middle: Data Volume -->
+            <div class="panel wide">
+                <div class="panel-title">MEMORY VOLUME</div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="memory-progress"></div>
+                    </div>
+                    <div class="progress-text" id="memory-text">
+                        <span class="left">0.0GB</span><span class="right">16.0GB</span>
+                    </div>
+                </div>
+                <div class="overall-progress" id="memory-overall">0%</div>
+            </div>
+
+            <!-- Top Right: Uptime -->
+            <div class="panel">
+                <div class="panel-title">UPTIME</div>
+                <div class="time-display" id="uptime">0h:00m:00s</div>
+                <div class="time-subtitle">SYSTEM RUNNING</div>
+            </div>
+
+            <!-- Bottom Left: Network Speed -->
+            <div class="panel">
+                <div class="panel-title">NETWORK I/O</div>
+                <div class="speed-display" id="network-speed">0MB/s</div>
+            </div>
+
+            <!-- Bottom Middle: Storage -->
+            <div class="panel wide">
+                <div class="panel-title">STORAGE</div>
+                <div class="storage-container">
+                    <div class="vertical-bars" id="storage-bars"></div>
+                    <div class="storage-info">
+                        <div class="storage-text" id="storage-text">
+                            <span class="left">0GB</span><span class="right">0GB</span>
+                        </div>
+                        <div class="storage-percent" id="storage-overall">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Right: Network Stats -->
+            <div class="panel">
+                <div class="panel-title">NETWORK STATS</div>
+                <div class="network-info">
+                    <div class="network-row">
+                        <span class="label">SENT</span>
+                        <span class="value" id="bytes-sent">0.00 GB</span>
+                    </div>
+                    <div class="network-row">
+                        <span class="label">RECV</span>
+                        <span class="value" id="bytes-recv">0.00 GB</span>
+                    </div>
+                    <div class="network-row">
+                        <span class="label">TOTAL</span>
+                        <span class="value" id="total-transfer">0.00 GB</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html> 

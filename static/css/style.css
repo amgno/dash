@@ -1,0 +1,288 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #000;
+    color: #fff;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 11px;
+    line-height: 1.2;
+    overflow: hidden;
+    height: 100vh;
+}
+
+.container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 280px 400px 280px;
+    grid-template-rows: 200px 200px;
+    gap: 2px;
+    background: #000;
+}
+
+.panel {
+    border: 1px solid #555;
+    background: #000;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.panel-title {
+    font-size: 11px;
+    font-weight: normal;
+    margin-bottom: 16px;
+    color: #fff;
+    letter-spacing: 0.5px;
+}
+
+/* CPU Radial */
+.loading-spinner {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cpu-radial {
+    width: 80px;
+    height: 80px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+}
+
+.cpu-percentage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 11px;
+    color: #fff;
+    z-index: 10;
+}
+
+.radial-bar {
+    position: absolute;
+    width: 3px;
+    height: 20px;
+    background: #333;
+    border-radius: 2px;
+    transform-origin: 50% 40px;
+    top: 0;
+    left: 50%;
+    margin-left: -1.5px;
+}
+
+.radial-bar.active {
+    background: #fff;
+}
+
+/* Progress Bar */
+.progress-container {
+    margin-bottom: 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    border: 1px solid #555;
+    background: #000;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    font-family: monospace;
+    font-size: 10px;
+    line-height: 1;
+    overflow: hidden;
+}
+
+.progress-fill {
+    color: #fff;
+    letter-spacing: 0;
+}
+
+.progress-text {
+    font-size: 10px;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.progress-text .left {
+    text-align: left;
+}
+
+.progress-text .right {
+    text-align: right;
+}
+
+.overall-progress {
+    font-size: 10px;
+    text-align: center;
+}
+
+/* Time Display */
+.time-display {
+    font-size: 20px;
+    font-weight: normal;
+    text-align: left;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding-left: 0;
+    margin-left: 0;
+}
+
+.time-subtitle {
+    font-size: 9px;
+    text-align: left;
+    margin-top: 8px;
+    padding-left: 0;
+    margin-left: 0;
+    color: #ccc;
+}
+
+/* Speed Display */
+.speed-display {
+    font-size: 24px;
+    font-weight: normal;
+    text-align: center;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* System Info */
+.system-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.process-count {
+    font-size: 11px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.transfer-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.transfer-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+}
+
+.label {
+    color: #fff;
+}
+
+.value {
+    color: #ccc;
+}
+
+/* Storage Vertical Bars */
+.storage-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+}
+
+.vertical-bars {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    height: 60px;
+    gap: 2px;
+    margin-bottom: 8px;
+}
+
+.storage-bar {
+    width: 8px;
+    background: #333;
+    display: flex;
+    flex-direction: column-reverse;
+    font-family: monospace;
+    font-size: 8px;
+    line-height: 4px;
+    overflow: hidden;
+}
+
+.storage-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.storage-text {
+    font-size: 10px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.storage-text .left {
+    text-align: left;
+}
+
+.storage-text .right {
+    text-align: right;
+}
+
+.storage-percent {
+    font-size: 10px;
+    text-align: center;
+}
+
+/* Network Stats */
+.network-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+}
+
+.network-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+}
+
+.network-row .label {
+    color: #fff;
+    font-weight: normal;
+}
+
+.network-row .value {
+    color: #ccc;
+    font-weight: normal;
+} 
