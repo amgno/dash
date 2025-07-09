@@ -5,6 +5,7 @@ import time
 import socket
 import subprocess
 import os
+import platform
 from datetime import datetime, timedelta
 
 # Configurazione per Docker: accesso alle metriche del sistema host
@@ -21,13 +22,38 @@ def configure_psutil_for_host():
         print(f"🐳 Docker mode: usando {host_proc} per metriche del sistema host")
         return True
     else:
-        print("🖥️  Bare metal mode: usando /proc nativo")
+        system_name = platform.system()
+        print(f"🖥️  Bare metal mode su {system_name}: usando metriche native del sistema")
         return False
 
-# Inizializza configurazione psutil
+# Rileva il sistema operativo
+SYSTEM_OS = platform.system()
+IS_WINDOWS = SYSTEM_OS == 'Windows'
 IS_DOCKER = configure_psutil_for_host()
 
 app = Flask(__name__)
+
+def get_load_average():
+    """Ottiene il load average del sistema (compatibile cross-platform)"""
+    try:
+        if IS_WINDOWS:
+            # Su Windows, simula il load average con la percentuale CPU
+            return psutil.cpu_percent(interval=0.1) / 100.0
+        else:
+            # Su Unix/Linux/macOS, usa getloadavg()
+            return os.getloadavg()[0]
+    except (AttributeError, OSError):
+        # Fallback se getloadavg() non è disponibile
+        return psutil.cpu_percent(interval=0.1) / 100.0
+
+def get_disk_path():
+    """Restituisce il path corretto per il controllo del disco"""
+    if IS_DOCKER and os.path.exists('/host'):
+        return '/host'
+    elif IS_WINDOWS:
+        return 'C:\\'  # Drive principale su Windows
+    else:
+        return '/'  # Root su Unix/Linux/macOS
 
 def get_system_stats():
     """Raccoglie le statistiche del sistema VPS"""
@@ -41,13 +67,9 @@ def get_system_stats():
     memory_percent = memory.percent
     memory_used_gb = (memory_percent / 100) * memory_total_gb
     
-    # Disk Usage (gestisce Docker host mount)
-    if IS_DOCKER and os.path.exists('/host'):
-        # In Docker, usa il mount del sistema host
-        disk = shutil.disk_usage('/host')
-    else:
-        # Bare metal o Docker senza host mount
-        disk = shutil.disk_usage('/')
+    # Disk Usage (gestisce Docker host mount e Windows)
+    disk_path = get_disk_path()
+    disk = shutil.disk_usage(disk_path)
     
     disk_used_gb = (disk.total - disk.free) / (1024**3)
     disk_total_gb = disk.total / (1024**3)
@@ -61,8 +83,8 @@ def get_system_stats():
     uptime_seconds = time.time() - boot_time
     uptime = str(timedelta(seconds=int(uptime_seconds)))
     
-    # Load Average
-    load_avg = os.getloadavg()
+    # Load Average (compatibile cross-platform)
+    load_avg = get_load_average()
     
     # Number of processes
     num_processes = len(psutil.pids())
@@ -79,11 +101,13 @@ def get_system_stats():
         'disk_percent': round(disk_percent, 1),
         'disk_used_gb': round(disk_used_gb, 2),
         'disk_total_gb': round(disk_total_gb, 2),
+        'disk_path': disk_path,
         'uptime': uptime,
-        'load_avg': round(load_avg[0], 2),
+        'load_avg': round(load_avg, 2),
         'num_processes': num_processes,
         'bytes_sent': round(bytes_sent, 2),
         'bytes_recv': round(bytes_recv, 2),
+        'system_os': SYSTEM_OS,
         'timestamp': datetime.now().strftime('%H:%M:%S')
     }
 
@@ -98,4 +122,6 @@ def get_stats():
     return jsonify(get_system_stats())
 
 if __name__ == '__main__':
+    print(f"🚀 Avvio Dashboard di Sistema su {SYSTEM_OS}")
+    print("📊 Accesso: http://localhost:8080")
     app.run(debug=True, host='0.0.0.0', port=8080) 

@@ -6,9 +6,11 @@ Un sistema di monitoraggio per VPS Ubuntu che replica esattamente l'interfaccia 
 
 - **Interfaccia identica** all'immagine di riferimento
 - **Monitoraggio in tempo reale** delle statistiche del sistema
+- **Cross-platform**: Compatibile con Linux, Ubuntu, macOS e Windows
 - **Design responsive** con tema scuro
 - **Aggiornamento automatico** ogni 2 secondi
 - **Controlli interattivi** (Refresh, Pause, Close)
+- **Avvio semplificato**: File batch per Windows (.bat) e script per Linux (.sh)
 
 ## Statistiche Monitorate
 
@@ -22,10 +24,38 @@ Un sistema di monitoraggio per VPS Ubuntu che replica esattamente l'interfaccia 
 ## Installazione
 
 ### Prerequisiti
-- Python 3.7 o superiore
-- Sistema operativo Ubuntu/Linux
+- **Modalità Bare Metal**: Python 3.7+ e Sistema Ubuntu/Linux/Windows
+- **Modalità Docker**: Docker e Docker Compose
 
 ### Setup
+
+#### Modalità 1: Bare Metal (Esecuzione Diretta)
+
+##### 🪟 Windows
+
+1. **Assicurati di avere Python installato**:
+   - Scarica Python da: https://www.python.org/downloads/
+   - ⚠️ **IMPORTANTE**: Durante l'installazione, seleziona "Add Python to PATH"
+
+2. **Avvia automaticamente** (installa dipendenze e avvia):
+   ```cmd
+   # Doppio click su start.bat oppure da Command Prompt:
+   start.bat
+   ```
+
+3. **Avvio rapido** (se le dipendenze sono già installate):
+   ```cmd
+   # Doppio click su run.bat oppure da Command Prompt:
+   run.bat
+   ```
+
+4. **Avvio manuale** (da Command Prompt):
+   ```cmd
+   pip install -r requirements.txt
+   python app.py
+   ```
+
+##### 🐧 Linux/Ubuntu
 
 1. **Clona o scarica il progetto**:
 ```bash
@@ -40,6 +70,54 @@ pip install -r requirements.txt
 3. **Avvia l'applicazione**:
 ```bash
 python app.py
+# Oppure usa gli script helper
+chmod +x *.sh
+./start.sh    # Avvia in background
+./status.sh   # Controlla lo status
+```
+
+#### Modalità 2: Docker (🐳 Consigliato per VPS)
+
+**Vantaggi Docker:**
+- ✅ **Sistema Host**: Accesso completo alle metriche del sistema **bare metal**
+- ✅ **Isolamento**: App sicura e isolata
+- ✅ **Facilità**: Deploy con un comando
+- ✅ **Portabilità**: Funziona ovunque
+
+1. **Setup con Docker Compose (Raccomandato)**:
+```bash
+# Rendi eseguibili gli script
+chmod +x *.sh
+
+# Build e avvio in un comando
+./docker-compose.sh up
+
+# Altri comandi utili
+./docker-compose.sh logs    # Visualizza log
+./docker-compose.sh status  # Status completo
+./docker-compose.sh down    # Ferma tutto
+```
+
+2. **Setup Docker Manuale**:
+```bash
+./docker-build.sh   # Compila l'immagine
+./docker-run.sh     # Avvia container con accesso host
+./docker-stop.sh    # Ferma e opzionalmente rimuove
+```
+
+3. **Comandi Docker Nativi**:
+```bash
+# Build
+docker build -t vps-monitor .
+
+# Run con accesso al sistema host
+docker run -d --name vps-monitor \
+  --privileged --pid host --net host \
+  -v /proc:/host/proc:ro \
+  -v /sys:/host/sys:ro \
+  -v /:/host:ro \
+  -e HOST_PROC=/host/proc \
+  vps-monitor
 ```
 
 4. **Accedi al monitor**:
@@ -110,6 +188,11 @@ vps-monitor/
 ├── app.py              # Applicazione Flask principale
 ├── requirements.txt    # Dipendenze Python
 ├── README.md          # Documentazione
+├── start.bat          # 🪟 Avvio Windows con installazione dipendenze
+├── run.bat            # 🪟 Avvio rapido Windows
+├── start.sh           # 🐧 Script Linux per avvio in background
+├── status.sh          # 🐧 Script Linux per controllo status
+├── docker-*.sh        # 🐳 Script Docker per deployment
 ├── templates/
 │   └── index.html     # Template HTML principale
 └── static/
@@ -133,15 +216,53 @@ refreshInterval = setInterval(updateStats, 2000); // 2000ms = 2 secondi
 
 ## Risoluzione Problemi
 
-### Errore "ModuleNotFoundError: No module named 'psutil'"
+### 🪟 Problemi Windows
+
+#### Python non riconosciuto
+```cmd
+# Errore: 'python' is not recognized as an internal or external command
+# Soluzione: Reinstalla Python selezionando "Add Python to PATH"
+# Oppure usa: py app.py invece di python app.py
+```
+
+#### Pip non disponibile
+```cmd
+# Errore: 'pip' is not recognized
+# Soluzione: Prova con py -m pip install -r requirements.txt
+```
+
+#### Impossibile accedere alle metriche di sistema
+- Su Windows, alcune metriche come il load average sono simulate
+- Assicurati di eseguire come amministratore se necessario per accesso completo alle statistiche
+
+### 🐧 Problemi Linux/Ubuntu
+
+#### Errore "ModuleNotFoundError: No module named 'psutil'"
 ```bash
 pip install psutil
 ```
 
-### La porta 8080 è già in uso
+### 🌐 Problemi Generali
+
+#### La porta 8080 è già in uso
 Cambia la porta nell'ultima riga di `app.py`:
 ```python
 app.run(debug=True, host='0.0.0.0', port=9000)  # Usa porta 9000
+```
+
+### Docker: Container non riesce ad accedere alle metriche del sistema
+Assicurati di usare i mount corretti:
+```bash
+# Usa gli script forniti che includono tutti i mount necessari
+./docker-run.sh
+
+# Oppure aggiungi manualmente i mount del sistema host
+docker run --privileged --pid host \
+  -v /proc:/host/proc:ro \
+  -v /sys:/host/sys:ro \
+  -v /:/host:ro \
+  -e HOST_PROC=/host/proc \
+  vps-monitor
 ```
 
 ### Problemi di permessi su Linux
