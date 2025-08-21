@@ -163,15 +163,54 @@ body {
     color: #ccc;
 }
 
-/* Speed Display */
-.speed-display {
-    font-size: 24px;
-    font-weight: normal;
-    text-align: center;
+/* GPU Stats Display */
+.gpu-stats-display {
     flex: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 8px 0;
+}
+
+.gpu-main-stat {
+    font-size: 28px;
+    font-weight: normal;
+    text-align: center;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.gpu-subtitle {
+    font-size: 9px;
+    text-align: center;
+    color: #ccc;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+}
+
+.gpu-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+}
+
+.gpu-detail-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    align-items: center;
+}
+
+.gpu-label {
+    color: #fff;
+    font-weight: normal;
+}
+
+.gpu-value {
+    color: #ccc;
+    font-weight: normal;
 }
 
 /* System Info */
@@ -391,32 +430,59 @@ body {
     color: #ccc;
 }
 
-/* Multi Temperature Display */
-.temp-multi-display {
-    flex: 1;
+/* Temperature Progress Bars (stile memory) */
+.temp-progress-bars {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: 8px;
+    gap: 1px;
+    margin-bottom: 5px;
+    flex: 1;
+    padding: 5px 0;
 }
 
-.temp-row {
+.temp-progress-bar {
+    width: 100%;
+    height: 10px;
+    background: #000;
+    display: flex;
+    align-items: center;
+    padding: 1px 2px;
+    font-family: monospace;
+    font-size: 7px;
+    line-height: 1;
+    overflow: hidden;
+    margin-bottom: 1px;
+}
+
+.temp-bar-label {
+    font-size: 8px;
+    color: #ccc;
+    margin-bottom: 1px;
+    font-weight: bold;
+    text-transform: uppercase;
+    line-height: 1;
+}
+
+.temp-labels {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.temp-label-row {
+    font-size: 9px;
     display: flex;
     justify-content: space-between;
-    font-size: 10px;
-    align-items: center;
 }
 
-.temp-row .temp-label {
+.temp-label-row .left {
+    text-align: left;
     color: #fff;
-    font-weight: normal;
-    font-size: 10px;
 }
 
-.temp-row .temp-value {
+.temp-label-row .right {
+    text-align: right;
     color: #ccc;
-    font-weight: normal;
-    font-size: 10px;
 }
 
 /* Windows Services */
@@ -467,4 +533,49 @@ body {
 .service-status.stopped {
     background: #333;
     color: #666;
+}
+
+/* All Disks (stile storage con barre verticali) */
+.disks-bars-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    height: 60px;
+    gap: 3px;
+    margin-bottom: 8px;
+}
+
+.disk-storage-bar {
+    width: 12px;
+    background: #333;
+    display: flex;
+    flex-direction: column-reverse;
+    font-family: monospace;
+    font-size: 8px;
+    line-height: 4px;
+    overflow: hidden;
+    border: 1px solid #555;
+}
+
+.disks-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 8px;
+}
+
+.disk-info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 8px;
+}
+
+.disk-info-row .left {
+    text-align: left;
+    color: #fff;
+}
+
+.disk-info-row .right {
+    text-align: right;
+    color: #ccc;
 } 

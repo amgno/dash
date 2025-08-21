@@ -1,4 +1,4 @@
-console.log('🚀 VPS Monitor JavaScript caricato! Versione 3.0 - NETWORK STATS RIMOSSI');
+console.log('🚀 VPS Monitor JavaScript caricato! Versione 10.0 - TEMP CLEAN + DISKS SCAN DIRETTO');
 
 let isMonitoring = true;
 let refreshInterval;
@@ -13,9 +13,10 @@ async function updateStats() {
         
         // Debug: stampa i dati ricevuti
         console.log('📊 Dati ricevuti:', stats);
-        console.log('🎮 GPU Stats:', stats.gpu_stats);
+        console.log('🌐 Network Activity:', stats.network_activity);
         console.log('🌡️ Temperature:', stats.temperature);
-        console.log('⚙️ System Info:', stats.system_info);
+        console.log('💽 All Disks:', stats.all_disks);
+        console.log('🎮 GPU Stats:', stats.gpu_stats);
         console.log('📋 Top Processes:', stats.top_processes);
         
         // Aggiorna CPU (barrette radiali)
@@ -79,11 +80,8 @@ async function updateStats() {
         const uptimeElement = document.getElementById('uptime');
         uptimeElement.textContent = formatUptime(stats.uptime);
         
-        // Aggiorna Network I/O (velocità realistica basata su dati reali)
-        const networkSpeed = document.getElementById('network-speed');
-        // Simula una velocità realistica tra 0.1 e 10 MB/s
-        const randomSpeed = (Math.random() * 9.9 + 0.1); // Random tra 0.1 e 10 MB/s
-        networkSpeed.textContent = `${randomSpeed.toFixed(1)}MB/s`;
+        // Aggiorna GPU Stats
+        updateGpuStats(stats.gpu_stats);
         
         // Aggiorna Storage Vertical Bars
         const storageBars = document.getElementById('storage-bars');
@@ -129,8 +127,8 @@ async function updateStats() {
         storageText.innerHTML = `<span class="left">${stats.disk_used_gb.toFixed(1)}GB</span><span class="right">${stats.disk_total_gb.toFixed(1)}GB</span>`;
         storageOverall.textContent = `${Math.round(storagePercentage)}%`;
         
-        // Aggiorna GPU Stats
-        updateGpuStats(stats.gpu_stats);
+        // Aggiorna Network Activity
+        updateNetworkActivity(stats.network_activity);
         
         // Aggiorna Top Processes
         updateTopProcesses(stats.top_processes);
@@ -138,36 +136,65 @@ async function updateStats() {
         // Aggiorna Temperature
         updateTemperature(stats.temperature);
         
-        // Aggiorna System Info
-        updateSystemInfo(stats.system_info);
+        // Aggiorna All Disks
+        updateAllDisks(stats.all_disks);
         
     } catch (error) {
         console.error('Errore nel recupero delle statistiche:', error);
     }
 }
 
-// Funzione per aggiornare le statistiche GPU
+// Funzione per aggiornare l'attività di rete
+function updateNetworkActivity(netActivity) {
+    console.log('🌐 updateNetworkActivity chiamata con:', netActivity);
+    
+    const netUpload = document.getElementById('net-upload');
+    const netDownload = document.getElementById('net-download');
+    const netConnections = document.getElementById('net-connections');
+    
+    console.log('🌐 Elementi Network trovati:', {
+        netUpload: !!netUpload,
+        netDownload: !!netDownload,
+        netConnections: !!netConnections
+    });
+    
+    if (netActivity) {
+        if (netUpload) netUpload.textContent = `${netActivity.upload_speed} KB/s`;
+        if (netDownload) netDownload.textContent = `${netActivity.download_speed} KB/s`;
+        if (netConnections) netConnections.textContent = netActivity.connections;
+        console.log('🌐 Network aggiornato:', netActivity);
+    } else {
+        if (netUpload) netUpload.textContent = '0 KB/s';
+        if (netDownload) netDownload.textContent = '0 KB/s';
+        if (netConnections) netConnections.textContent = '0';
+        console.log('🌐 Network impostato su default');
+    }
+}
+
+// Funzione per aggiornare le statistiche GPU (pannello bottom-left)
 function updateGpuStats(gpuStats) {
     console.log('🎮 updateGpuStats chiamata con:', gpuStats);
     
-    const gpuLoad = document.getElementById('gpu-load');
+    const gpuMainLoad = document.getElementById('gpu-main-load');
     const gpuMemory = document.getElementById('gpu-memory');
     const gpuTemp = document.getElementById('gpu-temp');
     
     console.log('🎮 Elementi GPU trovati:', {
-        gpuLoad: !!gpuLoad,
+        gpuMainLoad: !!gpuMainLoad,
         gpuMemory: !!gpuMemory,
         gpuTemp: !!gpuTemp
     });
     
     if (gpuStats && gpuStats.length > 0) {
         const gpu = gpuStats[0]; // Usa la prima GPU
-        if (gpuLoad) gpuLoad.textContent = `${gpu.load}%`;
+        
+        if (gpuMainLoad) gpuMainLoad.textContent = `${gpu.load}%`;
         if (gpuMemory) gpuMemory.textContent = `${gpu.memory_used}/${gpu.memory_total} GB`;
         if (gpuTemp) gpuTemp.textContent = `${gpu.temperature}°C`;
+        
         console.log('🎮 GPU aggiornata:', gpu);
     } else {
-        if (gpuLoad) gpuLoad.textContent = 'N/A';
+        if (gpuMainLoad) gpuMainLoad.textContent = 'N/A';
         if (gpuMemory) gpuMemory.textContent = 'N/A';
         if (gpuTemp) gpuTemp.textContent = 'N/A';
         console.log('🎮 GPU impostata su N/A');
@@ -191,7 +218,7 @@ function updateTopProcesses(processes) {
             
             processRow.innerHTML = `
                 <span class="proc-name">${processName}</span>
-                <span class="proc-cpu">-</span>
+                <span class="proc-cpu">${proc.cpu_percent.toFixed(1)}%</span>
                 <span class="proc-memory">${proc.memory_percent.toFixed(1)}%</span>
             `;
             
@@ -202,73 +229,183 @@ function updateTopProcesses(processes) {
     }
 }
 
-// Funzione per aggiornare le temperature
+// Funzione per aggiornare le temperature (stile memory)
 function updateTemperature(tempData) {
     console.log('🌡️ updateTemperature chiamata con:', tempData);
     
-    const cpuTempElement = document.getElementById('cpu-temp');
-    const gpuTempElement = document.getElementById('gpu-temp');
-    const systemTempElement = document.getElementById('system-temp');
-    const mbTempElement = document.getElementById('mb-temp');
+    const tempProgressBars = document.getElementById('temp-progress-bars');
     
-    console.log('🌡️ Elementi temperatura trovati:', {
-        cpu: !!cpuTempElement,
-        gpu: !!gpuTempElement,
-        system: !!systemTempElement,
-        mb: !!mbTempElement
-    });
+    const tempComponents = [
+        { name: 'cpu', displayName: 'CPU', temp: tempData.cpu_temp },
+        { name: 'gpu', displayName: 'GPU', temp: tempData.gpu_temp },
+        { name: 'system', displayName: 'SYS', temp: tempData.system_temp },
+        { name: 'mb', displayName: 'MB', temp: tempData.mb_temp }
+    ];
     
-    if (tempData) {
-        if (cpuTempElement) cpuTempElement.textContent = tempData.cpu_temp > 0 ? `${tempData.cpu_temp}°C` : 'N/A';
-        if (gpuTempElement) gpuTempElement.textContent = tempData.gpu_temp > 0 ? `${tempData.gpu_temp}°C` : 'N/A';
-        if (systemTempElement) systemTempElement.textContent = tempData.system_temp > 0 ? `${tempData.system_temp}°C` : 'N/A';
-        if (mbTempElement) mbTempElement.textContent = tempData.mb_temp > 0 ? `${tempData.mb_temp}°C` : 'N/A';
-        console.log('🌡️ Temperature aggiornate:', tempData);
-    } else {
-        if (cpuTempElement) cpuTempElement.textContent = 'N/A';
-        if (gpuTempElement) gpuTempElement.textContent = 'N/A';
-        if (systemTempElement) systemTempElement.textContent = 'N/A';
-        if (mbTempElement) mbTempElement.textContent = 'N/A';
-        console.log('🌡️ Temperature impostate su N/A');
+    // Crea o aggiorna le barre progress (stile memory)
+    if (tempProgressBars) {
+        // Crea le barre solo se non esistono già
+        if (tempProgressBars.children.length === 0) {
+            tempComponents.forEach((component, index) => {
+                // Crea il container per label + barra
+                const barContainer = document.createElement('div');
+                
+                // Crea l'etichetta
+                const label = document.createElement('div');
+                label.className = 'temp-bar-label';
+                label.textContent = component.displayName;
+                label.id = `temp-label-${index}`;
+                
+                // Crea la barra
+                const progressBar = document.createElement('div');
+                progressBar.className = 'temp-progress-bar';
+                progressBar.id = `temp-bar-${index}`;
+                
+                // Aggiungi al container
+                barContainer.appendChild(label);
+                barContainer.appendChild(progressBar);
+                tempProgressBars.appendChild(barContainer);
+            });
+        }
+        
+        // Aggiorna il contenuto delle barre esistenti
+        tempComponents.forEach((component, index) => {
+            const progressBar = document.getElementById(`temp-bar-${index}`);
+            if (progressBar && component.temp > 0) {
+                // Calcola percentuale (range 20-80°C)
+                const minTemp = 20;
+                const maxTemp = 80;
+                const percentage = Math.min(100, Math.max(0, ((component.temp - minTemp) / (maxTemp - minTemp)) * 100));
+                
+                // Crea le barrette come caratteri (stile memory) - aumentiamo da 30 a 50 per riempire meglio
+                const totalBars = 50; 
+                const filledBars = Math.floor((percentage / 100) * totalBars);
+                let progressText = '';
+                
+                // Determina colore basato su temperatura
+                let colorStyle = '';
+                if (component.temp < 40) {
+                    colorStyle = 'color: #4a9eff;'; // Blu
+                } else if (component.temp < 60) {
+                    colorStyle = 'color: #ffa500;'; // Arancione
+                } else if (component.temp < 75) {
+                    colorStyle = 'color: #ff6b47;'; // Rosso chiaro
+                } else {
+                    colorStyle = 'color: #ff4a4a;'; // Rosso
+                }
+                
+                // Crea barre piene
+                for (let i = 0; i < filledBars; i++) {
+                    progressText += `<span style="${colorStyle}">|</span>`;
+                }
+                
+                // Crea barre vuote
+                for (let i = filledBars; i < totalBars; i++) {
+                    progressText += '<span style="color: #333">|</span>';
+                }
+                
+                progressBar.innerHTML = progressText;
+                
+                console.log(`🌡️ ${component.name}: ${component.temp}°C, ${percentage}%, ${filledBars}/${totalBars} barre`);
+            } else if (progressBar) {
+                // Barra vuota se temperatura non disponibile
+                const emptyBars = '|'.repeat(50);
+                progressBar.innerHTML = `<span style="color: #333">${emptyBars}</span>`;
+            }
+        });
     }
 }
 
-// Funzione per aggiornare le informazioni sistema
-function updateSystemInfo(systemInfo) {
-    console.log('⚙️ updateSystemInfo chiamata con:', systemInfo);
+// Funzione per aggiornare tutti i dischi (stile storage)
+function updateAllDisks(allDisks) {
+    console.log('💽 updateAllDisks chiamata con:', allDisks);
+    console.log('💽 Tipo di allDisks:', typeof allDisks);
+    console.log('💽 È array?', Array.isArray(allDisks));
+    console.log('💽 Lunghezza:', allDisks ? allDisks.length : 'undefined');
     
-    const servicesList = document.getElementById('services-list');
+    const disksBarsContainer = document.getElementById('disks-bars-container');
+    const disksInfo = document.getElementById('disks-info');
     
-    console.log('⚙️ services-list elemento trovato:', !!servicesList);
+    console.log('💽 disksBarsContainer trovato:', !!disksBarsContainer);
+    console.log('💽 disksInfo trovato:', !!disksInfo);
     
-    if (!servicesList) {
-        console.error('⚙️ Elemento services-list non trovato!');
+    if (!disksBarsContainer || !disksInfo) {
+        console.error('💽 Elementi disks non trovati!');
+        console.error('💽 disksBarsContainer:', disksBarsContainer);
+        console.error('💽 disksInfo:', disksInfo);
         return;
     }
     
-    // Pulisci la lista esistente
-    servicesList.innerHTML = '';
+    // Se non abbiamo dati o array vuoto, mostra messaggio
+    if (!allDisks || !Array.isArray(allDisks) || allDisks.length === 0) {
+        console.warn('💽 Nessun disco trovato, mostro placeholder');
+        disksBarsContainer.innerHTML = '<div style="color: #ccc; text-align: center; padding: 20px;">Caricamento dischi...</div>';
+        disksInfo.innerHTML = '<div style="color: #888; font-size: 10px;">Rilevamento dischi in corso</div>';
+        return;
+    }
     
-    if (systemInfo && systemInfo.length > 0) {
-        console.log('⚙️ Aggiornamento con', systemInfo.length, 'elementi');
-        systemInfo.forEach(info => {
-            const infoRow = document.createElement('div');
-            infoRow.className = 'service-row';
+    // Pulisci i container
+    disksBarsContainer.innerHTML = '';
+    disksInfo.innerHTML = '';
+    
+    if (allDisks && allDisks.length > 0) {
+        console.log('💽 Aggiornamento con', allDisks.length, 'dischi');
+        
+        // Crea le barre verticali per ogni disco (stile storage)
+        allDisks.forEach(disk => {
+            const diskBar = document.createElement('div');
+            diskBar.className = 'disk-storage-bar';
             
-            // Tronca il valore se troppo lungo
-            const valueText = info.value.length > 10 ? info.value.substring(0, 10) + '...' : info.value;
+            // Calcola altezza barra basata su percentuale utilizzo
+            const barHeight = Math.floor((disk.usage_percent / 100) * 60);
+            diskBar.style.height = Math.max(8, barHeight) + 'px';
             
-            infoRow.innerHTML = `
-                <span class="service-name">${info.label}</span>
-                <span class="service-status running">${valueText}</span>
+            // Colore basato su utilizzo
+            if (disk.usage_percent > 80) {
+                diskBar.style.backgroundColor = '#ff4a4a'; // Rosso
+            } else if (disk.usage_percent > 60) {
+                diskBar.style.backgroundColor = '#ffa500'; // Arancione
+            } else {
+                diskBar.style.backgroundColor = '#fff'; // Bianco
+            }
+            
+            disksBarsContainer.appendChild(diskBar);
+        });
+        
+        // Crea le info testuali
+        allDisks.forEach(disk => {
+            const diskInfoRow = document.createElement('div');
+            diskInfoRow.className = 'disk-info-row';
+            
+            diskInfoRow.innerHTML = `
+                <span class="left">${disk.label}</span>
+                <span class="right">${disk.used_gb}/${disk.total_gb}GB</span>
             `;
             
-            servicesList.appendChild(infoRow);
-            console.log('⚙️ Aggiunto:', info.label, '=', valueText);
+            disksInfo.appendChild(diskInfoRow);
+            
+            console.log(`💽 Aggiunto: ${disk.label} - ${disk.usage_percent}% (${disk.used_gb}/${disk.total_gb}GB)`);
         });
+        
+        // Aggiungi percentuale media se ci sono più dischi
+        if (allDisks.length > 1) {
+            const avgUsage = allDisks.reduce((sum, disk) => sum + disk.usage_percent, 0) / allDisks.length;
+            const totalUsed = allDisks.reduce((sum, disk) => sum + disk.used_gb, 0);
+            const totalSize = allDisks.reduce((sum, disk) => sum + disk.total_gb, 0);
+            
+            const avgRow = document.createElement('div');
+            avgRow.className = 'disk-info-row';
+            avgRow.innerHTML = `
+                <span class="left">AVG</span>
+                <span class="right">${avgUsage.toFixed(1)}%</span>
+            `;
+            disksInfo.appendChild(avgRow);
+        }
+        
     } else {
-        console.log('⚙️ Nessun dato system info, mostrando errore');
-        servicesList.innerHTML = '<div class="service-row"><span class="service-name">ERROR</span><span class="service-status stopped">N/A</span></div>';
+        console.log('💽 Nessun disco trovato');
+        disksBarsContainer.innerHTML = '<div class="disk-storage-bar" style="height: 8px; background: #333;"></div>';
+        disksInfo.innerHTML = '<div class="disk-info-row"><span class="left">ERR</span><span class="right">N/A</span></div>';
     }
 }
 

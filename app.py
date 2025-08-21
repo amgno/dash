@@ -75,60 +75,234 @@ def get_disk_path():
         return '/'  # Root su Unix/Linux/macOS
 
 def get_gpu_stats():
-    """Ottiene le statistiche GPU (Windows) o simulate"""
+    """Ottiene statistiche GPU reali se possibile, altrimenti simulate"""
+    
+    # Prima prova: GPUtil su Windows
     if GPUtil and IS_WINDOWS:
         try:
             gpus = GPUtil.getGPUs()
+            print(f"🎮 GPUs trovate con GPUtil: {len(gpus) if gpus else 0}")
+            
             if gpus:
                 gpu = gpus[0]  # Prima GPU
-                return [{
+                
+                # Debug: stampa i valori raw della GPU
+                print(f"🔍 GPU raw values: load={gpu.load}, memory_used={gpu.memoryUsed}, memory_total={gpu.memoryTotal}, temp={gpu.temperature}")
+                
+                # gpu.load è già 0-1, quindi moltiplicare per 100 è corretto
+                # Ma controlliamo se forse è già in percentuale
+                raw_load = gpu.load
+                if raw_load > 1:
+                    # È già in percentuale (0-100)
+                    gpu_load = round(raw_load, 1)
+                    print(f"🔍 GPU load già in percentuale: {gpu_load}%")
+                else:
+                    # È in formato 0-1, convertire a percentuale
+                    gpu_load = round(raw_load * 100, 1)
+                    print(f"🔍 GPU load convertito da {raw_load} a {gpu_load}%")
+                
+                gpu_stats = {
                     'name': gpu.name[:20],
-                    'load': round(gpu.load * 100, 1),
+                    'load': gpu_load,
                     'memory_used': round(gpu.memoryUsed, 1),
                     'memory_total': round(gpu.memoryTotal, 1),
                     'memory_percent': round((gpu.memoryUsed / gpu.memoryTotal) * 100, 1),
-                    'temperature': round(gpu.temperature, 1)
-                }]
+                    'temperature': round(gpu.temperature, 1) if gpu.temperature else 0
+                }
+                print(f"✅ GPU reale via GPUtil: {gpu_stats}")
+                return [gpu_stats]
         except Exception as e:
-            print(f"Errore GPU stats: {e}")
+            print(f"⚠️ Errore GPUtil: {e}")
     
-    # Fallback: simula statistiche GPU realistiche
+    # Seconda prova: nvidia-smi (disponibile su molti sistemi)
+    try:
+        import subprocess
+        result = subprocess.run([
+            'nvidia-smi', 
+            '--query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu', 
+            '--format=csv,noheader,nounits'
+        ], capture_output=True, text=True, timeout=5)
+        
+        if result.returncode == 0 and result.stdout.strip():
+            lines = result.stdout.strip().split('\n')
+            if lines and lines[0]:
+                gpu_data = [x.strip() for x in lines[0].split(',')]
+                
+                if len(gpu_data) >= 5:
+                    try:
+                        name = gpu_data[0]
+                        load = float(gpu_data[1])
+                        memory_used = float(gpu_data[2]) / 1024  # MB to GB
+                        memory_total = float(gpu_data[3]) / 1024  # MB to GB
+                        temperature = float(gpu_data[4])
+                        
+                        gpu_stats = {
+                            'name': name[:20],
+                            'load': round(load, 1),
+                            'memory_used': round(memory_used, 1),
+                            'memory_total': round(memory_total, 1),
+                            'memory_percent': round((memory_used / memory_total) * 100, 1),
+                            'temperature': round(temperature, 1)
+                        }
+                        print(f"✅ GPU reale via nvidia-smi: {gpu_stats}")
+                        return [gpu_stats]
+                    except (ValueError, IndexError) as parse_error:
+                        print(f"⚠️ Errore parsing nvidia-smi: {parse_error}")
+    except Exception as nvidia_error:
+        print(f"⚠️ nvidia-smi non disponibile: {nvidia_error}")
+    
+    # Terza prova: WMI su Windows per almeno il nome GPU
+    gpu_name = "GPU (Simulata)"
+    if wmi and IS_WINDOWS:
+        try:
+            import wmi as wmi_module
+            c = wmi_module.WMI()
+            
+            for video_controller in c.Win32_VideoController():
+                if video_controller.Name:
+                    name = video_controller.Name.lower()
+                    if any(brand in name for brand in ['nvidia', 'amd', 'intel', 'radeon', 'geforce', 'quadro']):
+                        gpu_name = video_controller.Name[:20]
+                        print(f"🎮 Nome GPU reale da WMI: {gpu_name}")
+                        break
+        except Exception as wmi_error:
+            print(f"⚠️ Errore WMI: {wmi_error}")
+    
+    # Fallback: simula statistiche realistiche
+    print(f"🎮 Usando statistiche simulate per: {gpu_name}")
+    
     import random
     cpu_load = psutil.cpu_percent()
     
-    # Simula GPU load basato su CPU load con alcune variazioni
+    # Simula GPU load basato su CPU load con variazioni realistiche
     gpu_load = max(5, min(95, cpu_load + random.uniform(-10, 20)))
     
+    # Memoria varia in base al load e al tipo di GPU stimato
+    if 'rtx' in gpu_name.lower() or 'gtx 16' in gpu_name.lower():
+        memory_total = 8.0
+        base_memory = 1.5
+    elif 'gtx' in gpu_name.lower():
+        memory_total = 6.0
+        base_memory = 1.0
+    else:
+        memory_total = 4.0
+        base_memory = 0.8
+    
+    memory_used = round(base_memory + (gpu_load / 100) * (memory_total - base_memory), 1)
+    memory_percent = round((memory_used / memory_total) * 100, 1)
+    
+    # Temperatura realistica basata su load
+    temp_base = 40 + (gpu_load * 0.5)
+    temperature = round(temp_base + random.uniform(-5, 10), 1)
+    
     return [{
-        'name': 'GPU (Simulated)',
+        'name': gpu_name,
         'load': round(gpu_load, 1),
-        'memory_used': round(2.1 + (gpu_load / 100) * 3.9, 1),  # 2.1-6.0 GB
-        'memory_total': 8.0,
-        'memory_percent': round((2.1 + (gpu_load / 100) * 3.9) / 8.0 * 100, 1),
-        'temperature': round(45 + (gpu_load / 100) * 25 + random.uniform(-3, 3), 1)
+        'memory_used': memory_used,
+        'memory_total': memory_total,
+        'memory_percent': memory_percent,
+        'temperature': temperature
     }]
 
-def get_top_processes():
-    """Ottiene i processi che consumano più risorse"""
+def get_network_activity():
+    """Ottiene statistiche di attività di rete in tempo reale"""
     try:
-        # Metodo semplice e veloce
+        # Cache per valori precedenti
+        if not hasattr(get_network_activity, 'last_net_io'):
+            get_network_activity.last_net_io = None
+            get_network_activity.last_time = None
+        
+        current_net_io = psutil.net_io_counters()
+        current_time = time.time()
+        
+        if get_network_activity.last_net_io and get_network_activity.last_time:
+            # Calcola differenze
+            time_diff = current_time - get_network_activity.last_time
+            if time_diff > 0:
+                bytes_sent_diff = current_net_io.bytes_sent - get_network_activity.last_net_io.bytes_sent
+                bytes_recv_diff = current_net_io.bytes_recv - get_network_activity.last_net_io.bytes_recv
+                
+                # Velocità in KB/s
+                sent_speed = round(bytes_sent_diff / time_diff / 1024, 1)
+                recv_speed = round(bytes_recv_diff / time_diff / 1024, 1)
+                total_speed = round((sent_speed + recv_speed), 1)
+            else:
+                sent_speed = recv_speed = total_speed = 0
+        else:
+            sent_speed = recv_speed = total_speed = 0
+        
+        # Aggiorna cache
+        get_network_activity.last_net_io = current_net_io
+        get_network_activity.last_time = current_time
+        
+        # Ottieni numero connessioni
+        try:
+            connections = len(psutil.net_connections())
+        except:
+            connections = 0
+        
+        return {
+            'upload_speed': max(0, sent_speed),
+            'download_speed': max(0, recv_speed),
+            'total_speed': max(0, total_speed),
+            'connections': connections,
+            'total_sent_gb': round(current_net_io.bytes_sent / (1024**3), 2),
+            'total_recv_gb': round(current_net_io.bytes_recv / (1024**3), 2)
+        }
+    except Exception as e:
+        print(f"Errore network activity: {e}")
+        return {
+            'upload_speed': 0,
+            'download_speed': 0,
+            'total_speed': 0,
+            'connections': 0,
+            'total_sent_gb': 0,
+            'total_recv_gb': 0
+        }
+
+def get_top_processes():
+    """Ottiene i processi che consumano più CPU"""
+    try:
+        # Cache globale per i valori CPU precedenti
+        if not hasattr(get_top_processes, 'cpu_cache'):
+            get_top_processes.cpu_cache = {}
+        
         processes = []
+        current_pids = set()
+        
+        # Prima passata: ottieni tutti i processi attivi
         for proc in psutil.process_iter(['pid', 'name', 'memory_percent']):
             try:
                 info = proc.info
-                # Usa solo memoria per ordinare (più affidabile)
-                if info['memory_percent'] and info['memory_percent'] > 0.1:
+                pid = info['pid']
+                current_pids.add(pid)
+                
+                # Ottieni CPU percent (veloce, senza interval)
+                cpu_percent = proc.cpu_percent()
+                
+                # Se abbiamo un valore precedente, usa quello per il calcolo
+                if pid in get_top_processes.cpu_cache:
+                    cpu_percent = get_top_processes.cpu_cache[pid]
+                
+                # Aggiorna cache
+                get_top_processes.cpu_cache[pid] = cpu_percent
+                
+                # Filtra solo processi che usano CPU
+                if cpu_percent > 0.1 or info['memory_percent'] > 1.0:
                     processes.append({
-                        'pid': info['pid'],
-                        'name': info['name'][:15],  # Tronca subito
-                        'cpu_percent': 0.0,  # Placeholder
+                        'pid': pid,
+                        'name': info['name'][:15],
+                        'cpu_percent': round(cpu_percent, 1),
                         'memory_percent': round(info['memory_percent'], 1)
                     })
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
         
-        # Ordina per memoria e prendi i top 5
-        processes.sort(key=lambda x: x['memory_percent'], reverse=True)
+        # Pulisci cache per PID non più esistenti
+        get_top_processes.cpu_cache = {pid: cpu for pid, cpu in get_top_processes.cpu_cache.items() if pid in current_pids}
+        
+        # Ordina per CPU e prendi i top 5
+        processes.sort(key=lambda x: x['cpu_percent'], reverse=True)
         return processes[:5]
     except Exception as e:
         print(f"Errore top processes: {e}")
@@ -166,63 +340,193 @@ def get_system_temperature():
         'mb_temp': max(20, mb_temp)     # Minimo 20°C
     }
 
-def get_system_info():
-    """Ottiene informazioni semplici del sistema"""
+def get_all_disks():
+    """Ottiene informazioni su tutti i dischi del sistema"""
     try:
-        system_info = []
+        disks = []
         
-        # CPU cores (veloce)
-        cpu_logical = psutil.cpu_count(logical=True) or 4
-        cpu_physical = psutil.cpu_count(logical=False) or 2
-        system_info.append({
-            'label': 'CORES',
-            'value': f'{cpu_physical}C/{cpu_logical}T'
-        })
+        # Ottieni tutte le partizioni
+        partitions = psutil.disk_partitions()
+        print(f"🔍 Partizioni trovate: {len(partitions)}")
         
-        # RAM totale (veloce)
-        try:
-            memory = psutil.virtual_memory()
-            ram_gb = round(memory.total / (1024**3))
-            system_info.append({'label': 'RAM', 'value': f'{ram_gb}GB'})
-        except:
-            system_info.append({'label': 'RAM', 'value': 'N/A'})
+        for partition in partitions:
+            try:
+                print(f"🔍 Analizzando partizione: {partition}")
+                
+                # Su Windows, filtra solo i drive chiaramente inutili
+                if IS_WINDOWS:
+                    # Filtra solo CD/DVD e network drives ovvi
+                    skip_partition = False
+                    
+                    # Salta se è chiaramente un CD/DVD
+                    if 'cdrom' in partition.opts.lower():
+                        skip_partition = True
+                        
+                    # Salta se è un network drive
+                    if partition.device.startswith('\\\\'):
+                        skip_partition = True
+                        
+                    # Salta se il device è troppo corto (drive invalidi)
+                    if len(partition.device) < 2:
+                        skip_partition = True
+                        
+                    # MA NON saltare se fstype è vuoto - potrebbero essere drive validi
+                    
+                    if skip_partition:
+                        print(f"🔍 Saltando partizione: {partition.device} (tipo: {partition.fstype}, opts: {partition.opts})")
+                        continue
+                    else:
+                        print(f"🔍 Provo partizione: {partition.device} (tipo: {partition.fstype}, opts: {partition.opts})")
+                else:
+                    # Su Linux/Mac, filtra diversamente
+                    if 'cdrom' in partition.opts or partition.fstype == '':
+                        continue
+                
+                # Ottieni utilizzo della partizione
+                partition_usage = psutil.disk_usage(partition.mountpoint)
+                print(f"🔍 Utilizzo {partition.device}: {partition_usage}")
+                
+                # Calcola percentuale utilizzo
+                if partition_usage.total > 0:
+                    usage_percent = (partition_usage.used / partition_usage.total) * 100
+                else:
+                    continue
+                
+                # Determina etichetta del disco
+                if IS_WINDOWS:
+                    label = partition.device.replace('\\', '').replace(':', '')  # C, D, etc.
+                    if not label:
+                        label = 'WIN'
+                else:
+                    label = partition.mountpoint.split('/')[-1] or 'root'
+                
+                disk_info = {
+                    'label': label[:4],  # Massimo 4 caratteri
+                    'mountpoint': partition.mountpoint,
+                    'fstype': partition.fstype,
+                    'total_gb': round(partition_usage.total / (1024**3), 1),
+                    'used_gb': round(partition_usage.used / (1024**3), 1),
+                    'free_gb': round(partition_usage.free / (1024**3), 1),
+                    'usage_percent': round(usage_percent, 1)
+                }
+                
+                disks.append(disk_info)
+                print(f"✅ Disco aggiunto: {disk_info}")
+                
+            except (PermissionError, OSError) as e:
+                print(f"⚠️ Errore accesso partizione {partition.device}: {e}")
+                continue
+            except Exception as e:
+                print(f"⚠️ Errore generico partizione {partition.device}: {e}")
+                continue
         
-        # OS (veloce)
-        os_name = platform.system()[:8]
-        system_info.append({'label': 'OS', 'value': os_name})
+        print(f"📊 Totale dischi validi trovati: {len(disks)}")
         
-        # Processi attivi (veloce)
-        try:
-            proc_count = len(psutil.pids())
-            system_info.append({'label': 'PROC', 'value': str(proc_count)})
-        except:
-            system_info.append({'label': 'PROC', 'value': 'N/A'})
+        # Su Windows, prova l'approccio diretto con drive noti
+        if IS_WINDOWS and not disks:
+            print("🔍 Partizioni non funzionano su Windows, provo approccio diretto...")
+            
+            # Lista di drive da testare (dall'A: al Z:)
+            potential_drives = [f"{chr(ord('A') + i)}:\\" for i in range(26)]
+            
+            for drive in potential_drives:
+                try:
+                    # Prova a accedere al drive
+                    drive_usage = psutil.disk_usage(drive)
+                    
+                    # Se arriviamo qui, il drive esiste
+                    usage_percent = (drive_usage.used / drive_usage.total) * 100
+                    total_gb = round(drive_usage.total / (1024**3), 1)
+                    used_gb = round(drive_usage.used / (1024**3), 1)
+                    free_gb = round(drive_usage.free / (1024**3), 1)
+                    
+                    # Filtra drive molto piccoli (probabilmente virtuali)
+                    if total_gb < 0.1:  # Meno di 100 MB
+                        continue
+                    
+                    disk_info = {
+                        'label': drive[0],  # C, D, E, etc.
+                        'mountpoint': drive,
+                        'fstype': 'NTFS',
+                        'total_gb': total_gb,
+                        'used_gb': used_gb,
+                        'free_gb': free_gb,
+                        'usage_percent': round(usage_percent, 1)
+                    }
+                    
+                    disks.append(disk_info)
+                    print(f"✅ Drive trovato: {drive} - {total_gb}GB ({usage_percent:.1f}% utilizzato)")
+                    
+                except (OSError, PermissionError, FileNotFoundError):
+                    # Drive non esiste o non accessibile
+                    pass
+                except Exception as e:
+                    print(f"⚠️ Errore inspiegabile su {drive}: {e}")
+                    pass
+            
+            print(f"📊 Windows drive scan completato: {len(disks)} dischi trovati")
         
-        # Uptime semplificato
-        try:
-            boot_time = psutil.boot_time()
-            uptime_hours = int((time.time() - boot_time) / 3600)
-            if uptime_hours < 24:
-                system_info.append({'label': 'UP', 'value': f'{uptime_hours}h'})
-            else:
-                uptime_days = uptime_hours // 24
-                system_info.append({'label': 'UP', 'value': f'{uptime_days}d'})
-        except:
-            system_info.append({'label': 'UP', 'value': 'N/A'})
+        # Fallback per altri sistemi o se Windows non trova niente
+        if not disks:
+            try:
+                # Usa la funzione get_disk_path() che già funziona
+                disk_path = get_disk_path()
+                main_usage = psutil.disk_usage(disk_path)
+                usage_percent = (main_usage.used / main_usage.total) * 100
+                
+                # Determina etichetta dal path
+                if IS_WINDOWS:
+                    label = disk_path.replace('\\', '').replace(':', '') or 'C'
+                    fstype = 'NTFS'
+                else:
+                    label = 'root'
+                    fstype = 'ext4'
+                
+                disks.append({
+                    'label': label,
+                    'mountpoint': disk_path,
+                    'fstype': fstype,
+                    'total_gb': round(main_usage.total / (1024**3), 1),
+                    'used_gb': round(main_usage.used / (1024**3), 1),
+                    'free_gb': round(main_usage.free / (1024**3), 1),
+                    'usage_percent': round(usage_percent, 1)
+                })
+                print(f"✅ Aggiunto disco di fallback: {disk_path}")
+                            
+            except Exception as e:
+                print(f"⚠️ Errore anche con fallback: {e}")
+                # Fallback assoluto finale
+                disks.append({
+                    'label': 'SYS',
+                    'mountpoint': 'Sistema',
+                    'fstype': 'Unknown',
+                    'total_gb': 100,
+                    'used_gb': 75,
+                    'free_gb': 25,
+                    'usage_percent': 75
+                })
+                print("⚠️ Usando dati disco di fallback assoluti")
         
-        # Architettura
-        arch = platform.machine()[:6]
-        system_info.append({'label': 'ARCH', 'value': arch})
+        # Ordina per percentuale utilizzo (più pieno per primo)
+        disks.sort(key=lambda x: x['usage_percent'], reverse=True)
         
-        return system_info[:6]
+        # Limita a massimo 6 dischi per non sovraffollare
+        return disks[:6]
         
     except Exception as e:
-        print(f"Errore system info: {e}")
+        print(f"❌ Errore generale all disks: {e}")
+        import traceback
+        traceback.print_exc()
         return [
-            {'label': 'ERROR', 'value': 'LOAD'},
-            {'label': 'FAILED', 'value': 'SYS'},
-            {'label': 'INFO', 'value': 'DATA'},
-            {'label': 'TRY', 'value': 'AGAIN'}
+            {
+                'label': 'ERR',
+                'mountpoint': '/',
+                'fstype': 'unknown',
+                'total_gb': 0,
+                'used_gb': 0,
+                'free_gb': 0,
+                'usage_percent': 0
+            }
         ]
 
 def get_system_stats():
@@ -284,10 +588,11 @@ def get_system_stats():
     
     # Aggiungi statistiche avanzate per tutti i sistemi
     stats.update({
-        'gpu_stats': get_gpu_stats(),  # Sempre disponibile (simulate se necessario)
+        'network_activity': get_network_activity(),  # Pannello NETWORK (middle left)
         'top_processes': get_top_processes(),
         'temperature': get_system_temperature(),
-        'system_info': get_system_info()
+        'all_disks': get_all_disks(),
+        'gpu_stats': get_gpu_stats()  # Pannello GPU STATS (bottom left)
     })
     
     return stats

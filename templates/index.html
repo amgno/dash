@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VPS Monitor - Statistiche Sistema</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=10">
 </head>
 <body>
     <div class="container">
@@ -40,21 +40,21 @@
                 <div class="time-subtitle">SYSTEM RUNNING</div>
             </div>
 
-            <!-- Middle Left: GPU Stats -->
+            <!-- Middle Left: Network Activity -->
             <div class="panel">
-                <div class="panel-title">GPU STATS</div>
+                <div class="panel-title">NETWORK</div>
                 <div class="gpu-info" id="gpu-info">
                     <div class="gpu-row">
-                        <span class="label">LOAD</span>
-                        <span class="value" id="gpu-load">0%</span>
+                        <span class="label">UP</span>
+                        <span class="value" id="net-upload">0 KB/s</span>
                     </div>
                     <div class="gpu-row">
-                        <span class="label">MEMORY</span>
-                        <span class="value" id="gpu-memory">0/0 GB</span>
+                        <span class="label">DOWN</span>
+                        <span class="value" id="net-download">0 KB/s</span>
                     </div>
                     <div class="gpu-row">
-                        <span class="label">TEMP</span>
-                        <span class="value" id="gpu-temp">0°C</span>
+                        <span class="label">CONN</span>
+                        <span class="value" id="net-connections">0</span>
                     </div>
                 </div>
             </div>
@@ -65,7 +65,7 @@
                 <div class="processes-container" id="processes-container">
                     <div class="process-header">
                         <span class="proc-name">PROCESS</span>
-                        <span class="proc-cpu">-</span>
+                        <span class="proc-cpu">CPU%</span>
                         <span class="proc-memory">MEM%</span>
                     </div>
                     <div class="processes-list" id="processes-list">
@@ -77,30 +77,30 @@
             <!-- Middle Right: System Temperature -->
             <div class="panel">
                 <div class="panel-title">TEMPERATURE</div>
-                <div class="temp-multi-display">
-                    <div class="temp-row">
-                        <span class="temp-label">CPU</span>
-                        <span class="temp-value" id="cpu-temp">0°C</span>
-                    </div>
-                    <div class="temp-row">
-                        <span class="temp-label">GPU</span>
-                        <span class="temp-value" id="gpu-temp">0°C</span>
-                    </div>
-                    <div class="temp-row">
-                        <span class="temp-label">SYS</span>
-                        <span class="temp-value" id="system-temp">0°C</span>
-                    </div>
-                    <div class="temp-row">
-                        <span class="temp-label">MB</span>
-                        <span class="temp-value" id="mb-temp">0°C</span>
+                <div class="progress-container">
+                    <div class="temp-progress-bars" id="temp-progress-bars">
+                        <!-- Barre temperature popolate dinamicamente -->
                     </div>
                 </div>
             </div>
 
-            <!-- Bottom Left: Network Speed -->
+            <!-- Bottom Left: GPU Stats -->
             <div class="panel">
-                <div class="panel-title">NETWORK I/O</div>
-                <div class="speed-display" id="network-speed">0MB/s</div>
+                <div class="panel-title">GPU STATS</div>
+                <div class="gpu-stats-display">
+                    <div class="gpu-main-stat" id="gpu-main-load">0%</div>
+                    <div class="gpu-subtitle">GPU LOAD</div>
+                    <div class="gpu-details">
+                        <div class="gpu-detail-row">
+                            <span class="gpu-label">MEM</span>
+                            <span class="gpu-value" id="gpu-memory">0/0 GB</span>
+                        </div>
+                        <div class="gpu-detail-row">
+                            <span class="gpu-label">TEMP</span>
+                            <span class="gpu-value" id="gpu-temp">0°C</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Bottom Middle: Storage -->
@@ -117,18 +117,21 @@
                 </div>
             </div>
 
-            <!-- Bottom Right: System Info -->
+            <!-- Bottom Right: All Disks -->
             <div class="panel">
-                <div class="panel-title">SYSTEM</div>
-                <div class="services-info" id="services-info">
-                    <div class="services-list" id="services-list">
-                        <!-- Informazioni sistema popolate dinamicamente -->
+                <div class="panel-title">ALL DISKS</div>
+                <div class="storage-container">
+                    <div class="disks-bars-container" id="disks-bars-container">
+                        <!-- Barre dischi popolate dinamicamente -->
+                    </div>
+                    <div class="disks-info" id="disks-info">
+                        <!-- Info dischi popolata dinamicamente -->
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='js/app.js') }}?v=3"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=8"></script>
 </body>
 </html> 
