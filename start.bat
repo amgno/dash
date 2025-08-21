@@ -32,16 +32,21 @@ echo.
 
 REM Installa le dipendenze
 echo 📦 Installazione dipendenze...
-pip install -r requirements.txt
+echo ⏳ Installazione delle librerie di base...
+pip install Flask==2.3.3 psutil==5.9.5 Werkzeug==2.3.7
 
+echo ⏳ Installazione delle librerie Windows (opzionali)...
+pip install GPUtil==1.4.0
 if %errorlevel% neq 0 (
-    echo ❌ ERRORE: Impossibile installare le dipendenze
-    echo 🔍 Controlla la connessione internet e riprova
-    pause
-    exit /b 1
+    echo ⚠️  GPUtil non installato - verrà usata simulazione GPU
 )
 
-echo ✅ Dipendenze installate con successo!
+pip install wmi==1.5.1
+if %errorlevel% neq 0 (
+    echo ⚠️  WMI non installato - verranno usate temperature simulate
+)
+
+echo ✅ Installazione dipendenze completata!
 echo.
 
 REM Avvia l'applicazione

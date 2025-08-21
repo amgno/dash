@@ -1,3 +1,5 @@
+console.log('🚀 VPS Monitor JavaScript caricato! Versione 3.0 - NETWORK STATS RIMOSSI');
+
 let isMonitoring = true;
 let refreshInterval;
 
@@ -8,6 +10,13 @@ async function updateStats() {
     try {
         const response = await fetch('/api/stats');
         const stats = await response.json();
+        
+        // Debug: stampa i dati ricevuti
+        console.log('📊 Dati ricevuti:', stats);
+        console.log('🎮 GPU Stats:', stats.gpu_stats);
+        console.log('🌡️ Temperature:', stats.temperature);
+        console.log('⚙️ System Info:', stats.system_info);
+        console.log('📋 Top Processes:', stats.top_processes);
         
         // Aggiorna CPU (barrette radiali)
         const cpuRadial = document.getElementById('cpu-radial');
@@ -120,19 +129,146 @@ async function updateStats() {
         storageText.innerHTML = `<span class="left">${stats.disk_used_gb.toFixed(1)}GB</span><span class="right">${stats.disk_total_gb.toFixed(1)}GB</span>`;
         storageOverall.textContent = `${Math.round(storagePercentage)}%`;
         
-        // Aggiorna Network Stats
-        const bytesSent = document.getElementById('bytes-sent');
-        const bytesRecv = document.getElementById('bytes-recv');
-        const totalTransfer = document.getElementById('total-transfer');
+        // Aggiorna GPU Stats
+        updateGpuStats(stats.gpu_stats);
         
-        const totalGB = stats.bytes_sent + stats.bytes_recv;
+        // Aggiorna Top Processes
+        updateTopProcesses(stats.top_processes);
         
-        bytesSent.textContent = `${stats.bytes_sent.toFixed(2)} GB`;
-        bytesRecv.textContent = `${stats.bytes_recv.toFixed(2)} GB`;
-        totalTransfer.textContent = `${totalGB.toFixed(2)} GB`;
+        // Aggiorna Temperature
+        updateTemperature(stats.temperature);
+        
+        // Aggiorna System Info
+        updateSystemInfo(stats.system_info);
         
     } catch (error) {
         console.error('Errore nel recupero delle statistiche:', error);
+    }
+}
+
+// Funzione per aggiornare le statistiche GPU
+function updateGpuStats(gpuStats) {
+    console.log('🎮 updateGpuStats chiamata con:', gpuStats);
+    
+    const gpuLoad = document.getElementById('gpu-load');
+    const gpuMemory = document.getElementById('gpu-memory');
+    const gpuTemp = document.getElementById('gpu-temp');
+    
+    console.log('🎮 Elementi GPU trovati:', {
+        gpuLoad: !!gpuLoad,
+        gpuMemory: !!gpuMemory,
+        gpuTemp: !!gpuTemp
+    });
+    
+    if (gpuStats && gpuStats.length > 0) {
+        const gpu = gpuStats[0]; // Usa la prima GPU
+        if (gpuLoad) gpuLoad.textContent = `${gpu.load}%`;
+        if (gpuMemory) gpuMemory.textContent = `${gpu.memory_used}/${gpu.memory_total} GB`;
+        if (gpuTemp) gpuTemp.textContent = `${gpu.temperature}°C`;
+        console.log('🎮 GPU aggiornata:', gpu);
+    } else {
+        if (gpuLoad) gpuLoad.textContent = 'N/A';
+        if (gpuMemory) gpuMemory.textContent = 'N/A';
+        if (gpuTemp) gpuTemp.textContent = 'N/A';
+        console.log('🎮 GPU impostata su N/A');
+    }
+}
+
+// Funzione per aggiornare i processi top
+function updateTopProcesses(processes) {
+    const processesList = document.getElementById('processes-list');
+    
+    // Pulisci la lista esistente
+    processesList.innerHTML = '';
+    
+    if (processes && processes.length > 0) {
+        processes.forEach(proc => {
+            const processRow = document.createElement('div');
+            processRow.className = 'process-row';
+            
+            // Tronca il nome del processo se troppo lungo
+            const processName = proc.name.length > 12 ? proc.name.substring(0, 12) + '...' : proc.name;
+            
+            processRow.innerHTML = `
+                <span class="proc-name">${processName}</span>
+                <span class="proc-cpu">-</span>
+                <span class="proc-memory">${proc.memory_percent.toFixed(1)}%</span>
+            `;
+            
+            processesList.appendChild(processRow);
+        });
+    } else {
+        processesList.innerHTML = '<div class="process-row"><span class="proc-name">No data</span><span class="proc-cpu">-</span><span class="proc-memory">-</span></div>';
+    }
+}
+
+// Funzione per aggiornare le temperature
+function updateTemperature(tempData) {
+    console.log('🌡️ updateTemperature chiamata con:', tempData);
+    
+    const cpuTempElement = document.getElementById('cpu-temp');
+    const gpuTempElement = document.getElementById('gpu-temp');
+    const systemTempElement = document.getElementById('system-temp');
+    const mbTempElement = document.getElementById('mb-temp');
+    
+    console.log('🌡️ Elementi temperatura trovati:', {
+        cpu: !!cpuTempElement,
+        gpu: !!gpuTempElement,
+        system: !!systemTempElement,
+        mb: !!mbTempElement
+    });
+    
+    if (tempData) {
+        if (cpuTempElement) cpuTempElement.textContent = tempData.cpu_temp > 0 ? `${tempData.cpu_temp}°C` : 'N/A';
+        if (gpuTempElement) gpuTempElement.textContent = tempData.gpu_temp > 0 ? `${tempData.gpu_temp}°C` : 'N/A';
+        if (systemTempElement) systemTempElement.textContent = tempData.system_temp > 0 ? `${tempData.system_temp}°C` : 'N/A';
+        if (mbTempElement) mbTempElement.textContent = tempData.mb_temp > 0 ? `${tempData.mb_temp}°C` : 'N/A';
+        console.log('🌡️ Temperature aggiornate:', tempData);
+    } else {
+        if (cpuTempElement) cpuTempElement.textContent = 'N/A';
+        if (gpuTempElement) gpuTempElement.textContent = 'N/A';
+        if (systemTempElement) systemTempElement.textContent = 'N/A';
+        if (mbTempElement) mbTempElement.textContent = 'N/A';
+        console.log('🌡️ Temperature impostate su N/A');
+    }
+}
+
+// Funzione per aggiornare le informazioni sistema
+function updateSystemInfo(systemInfo) {
+    console.log('⚙️ updateSystemInfo chiamata con:', systemInfo);
+    
+    const servicesList = document.getElementById('services-list');
+    
+    console.log('⚙️ services-list elemento trovato:', !!servicesList);
+    
+    if (!servicesList) {
+        console.error('⚙️ Elemento services-list non trovato!');
+        return;
+    }
+    
+    // Pulisci la lista esistente
+    servicesList.innerHTML = '';
+    
+    if (systemInfo && systemInfo.length > 0) {
+        console.log('⚙️ Aggiornamento con', systemInfo.length, 'elementi');
+        systemInfo.forEach(info => {
+            const infoRow = document.createElement('div');
+            infoRow.className = 'service-row';
+            
+            // Tronca il valore se troppo lungo
+            const valueText = info.value.length > 10 ? info.value.substring(0, 10) + '...' : info.value;
+            
+            infoRow.innerHTML = `
+                <span class="service-name">${info.label}</span>
+                <span class="service-status running">${valueText}</span>
+            `;
+            
+            servicesList.appendChild(infoRow);
+            console.log('⚙️ Aggiunto:', info.label, '=', valueText);
+        });
+    } else {
+        console.log('⚙️ Nessun dato system info, mostrando errore');
+        servicesList.innerHTML = '<div class="service-row"><span class="service-name">ERROR</span><span class="service-status stopped">N/A</span></div>';
     }
 }
 
@@ -186,7 +322,22 @@ function animateProgressBar() {
 
 // Inizializzazione al caricamento della pagina
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('VPS Monitor inizializzato');
+    console.log('🎯 VPS Monitor inizializzato - DOM caricato');
+    console.log('🔍 Verifico elementi HTML...');
+    
+    // Verifica che tutti gli elementi esistano
+    const elements = [
+        'cpu-radial', 'cpu-percent', 'memory-progress', 'memory-text', 'memory-overall',
+        'uptime', 'gpu-load', 'gpu-memory', 'gpu-temp', 'processes-list', 
+        'cpu-temp', 'gpu-temp', 'system-temp', 'mb-temp', 'services-list'
+    ];
+    
+    elements.forEach(id => {
+        const element = document.getElementById(id);
+        console.log(`📋 ${id}:`, !!element);
+    });
+    
+    console.log('🚀 Avvio aggiornamento statistiche...');
     
     // Carica le statistiche iniziali
     updateStats();

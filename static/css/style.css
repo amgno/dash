@@ -26,7 +26,7 @@ body {
 .grid {
     display: grid;
     grid-template-columns: 280px 400px 280px;
-    grid-template-rows: 200px 200px;
+    grid-template-rows: 180px 180px 180px;
     gap: 2px;
     background: #000;
 }
@@ -285,4 +285,186 @@ body {
 .network-row .value {
     color: #ccc;
     font-weight: normal;
+}
+
+/* GPU Stats */
+.gpu-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+}
+
+.gpu-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+}
+
+.gpu-row .label {
+    color: #fff;
+    font-weight: normal;
+}
+
+.gpu-row .value {
+    color: #ccc;
+    font-weight: normal;
+}
+
+/* Top Processes */
+.processes-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    font-size: 9px;
+}
+
+.process-header {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #333;
+    color: #fff;
+    font-weight: normal;
+}
+
+.proc-name {
+    flex: 2;
+    text-align: left;
+}
+
+.proc-cpu, .proc-memory {
+    flex: 1;
+    text-align: right;
+}
+
+.processes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    overflow: hidden;
+}
+
+.process-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #ccc;
+}
+
+.process-row .proc-name {
+    flex: 2;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.process-row .proc-cpu,
+.process-row .proc-memory {
+    flex: 1;
+    text-align: right;
+}
+
+/* Temperature Display */
+.temp-display {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.temp-value {
+    font-size: 24px;
+    font-weight: normal;
+    text-align: center;
+    color: #fff;
+}
+
+.temp-label {
+    font-size: 9px;
+    text-align: center;
+    color: #ccc;
+}
+
+/* Multi Temperature Display */
+.temp-multi-display {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+}
+
+.temp-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    align-items: center;
+}
+
+.temp-row .temp-label {
+    color: #fff;
+    font-weight: normal;
+    font-size: 10px;
+}
+
+.temp-row .temp-value {
+    color: #ccc;
+    font-weight: normal;
+    font-size: 10px;
+}
+
+/* Windows Services */
+.services-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    font-size: 9px;
+}
+
+.services-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow: hidden;
+}
+
+.service-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 9px;
+}
+
+.service-name {
+    flex: 1;
+    text-align: left;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.service-status {
+    font-size: 8px;
+    padding: 1px 4px;
+    border-radius: 2px;
+    text-align: center;
+    min-width: 45px;
+}
+
+.service-status.running {
+    background: #333;
+    color: #fff;
+}
+
+.service-status.stopped {
+    background: #333;
+    color: #666;
 } 
